@@ -43,7 +43,12 @@ export default function TicketDetail() {
   async function load() {
     setError(null)
     try {
-      const res = await fetch(`/api/tickets/${id}`)
+      const res = await fetch(`/api/tickets/${id}`, {
+        headers: {
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
+      })
       if (!res.ok) throw new Error('Ticket not found.')
       const data = await res.json()
       setTicket(data.ticket)
@@ -59,11 +64,15 @@ export default function TicketDetail() {
     try {
       const res = await fetch(`/api/tickets/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
         body: JSON.stringify(body),
       })
-      if (!res.ok) throw new Error('That update failed. Try again.')
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'That update failed. Try again.')
       setTicket(data.ticket)
     } catch (err) {
       setError(err.message)

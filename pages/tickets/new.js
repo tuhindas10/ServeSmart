@@ -32,8 +32,22 @@ export default function NewTicket() {
 
   async function handleSubmit(ev) {
     ev.preventDefault()
-    if (!form.title.trim() || !form.location.trim()) {
-      setError('Title and location are required.')
+    if (
+      !form.title.trim() ||
+      !form.description.trim() ||
+      !form.category.trim() ||
+      !form.location.trim() ||
+      !form.priority.trim()
+    ) {
+      setError('Title, description, category, location, and priority are required.')
+      return
+    }
+    if (!PRIORITIES.includes(form.priority)) {
+      setError('Please select a valid priority.')
+      return
+    }
+    if (form.description.trim().length < 20) {
+      setError('Description must be at least 20 characters.')
       return
     }
     setSubmitting(true)
@@ -41,7 +55,11 @@ export default function NewTicket() {
     try {
       const res = await fetch('/api/tickets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
         body: JSON.stringify({ ...form, studentId: user.id }),
       })
       if (!res.ok) {

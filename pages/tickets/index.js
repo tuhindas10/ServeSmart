@@ -40,7 +40,13 @@ export default function TicketList() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/tickets?studentId=${u.id}`)
+      const res = await fetch(`/api/tickets?studentId=${u.id}`, {
+        cache: 'no-store',
+        headers: {
+          'x-user-id': u.id,
+          'x-user-role': u.role,
+        },
+      })
       if (!res.ok) throw new Error('Request failed')
       const data = await res.json()
       setTickets(data.tickets)
@@ -158,7 +164,7 @@ export default function TicketList() {
             visible.map((t) => {
               const tech = t.technicianId ? findUser(t.technicianId) : null
               return (
-                <div className="ticket-row" key={t.id}>
+                <div className={`ticket-row priority-${t.priority.toLowerCase()}`} key={t.id}>
                   <div>
                     <span className="code">{ticketCode(t.id)}</span>
                   </div>

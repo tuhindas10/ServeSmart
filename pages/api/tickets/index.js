@@ -6,10 +6,15 @@ import {
   PRIORITIES,
 } from '../../../lib/store'
 
+function logRejected(req, reason, details = {}) {
+  console.warn(`[REJECTED] ${req.method} /api/tickets - ${reason}`, details)
+}
+
 export default function handler(req, res) {
   if (req.method === 'GET') return handleGet(req, res)
   if (req.method === 'POST') return handlePost(req, res)
   res.setHeader('Allow', ['GET', 'POST'])
+  logRejected(req, 'method not allowed')
   return res.status(405).json({ error: 'Method not allowed' })
 }
 
@@ -29,13 +34,44 @@ function handlePost(req, res) {
   const { title, description, category, location, priority, studentId } =
     req.body || {}
 
-  if (!title || !title.trim() || !location || !location.trim()) {
-    return res.status(400).json({ error: 'Title and location are required.' })
+  const isBlank = (value) =>
+    typeof value !== 'string' || value.trim().length === 0
+
+  const missingFields = [
+    ['title', title],
+    ['description', description],
+    ['category', category],
+    ['location', location],
+    ['priority', priority],
+  ]
+    .filter(([, value]) => isBlank(value))
+    .map(([field]) => field)
+
+  if (missingFields.length) {
+    logRejected(req, `missing or empty fields: ${missingFields.join(', ')}`, {
+      title,
+      description,
+      category,
+      location,
+      priority,
+    })
+    return res
+      .status(400)
+      .json({ error: 'Title, description, category, location, and priority are required.' })
   }
-  if (category && !CATEGORIES.includes(category)) {
+  if (description.trim().length < 20) {
+    logRejected(req, 'description is too short', {
+      description,
+      length: description.trim().length,
+    })
+    return res.status(400).json({ error: 'Description must be at least 20 characters.' })
+  }
+  if (!CATEGORIES.includes(category)) {
+    logRejected(req, 'unknown category', { category })
     return res.status(400).json({ error: 'Unknown category.' })
   }
-  if (priority && !PRIORITIES.includes(priority)) {
+  if (!PRIORITIES.includes(priority)) {
+    logRejected(req, 'unknown priority', { priority })
     return res.status(400).json({ error: 'Unknown priority.' })
   }
   const now = new Date().toISOString()
@@ -44,10 +80,10 @@ function handlePost(req, res) {
   const ticket = {
     id: generateId(),
     title: title.trim(),
-    description: (description || '').trim(),
-    category: category || CATEGORIES[0],
+    description: description.trim(),
+    category,
     location: location.trim(),
-    priority: priority || 'P4',
+    priority,
     status: 'Open',
     studentId: studentId || null,
     technicianId: null,

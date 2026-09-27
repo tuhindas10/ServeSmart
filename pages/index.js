@@ -83,7 +83,7 @@ export default function Home() {
 
       <main className="home-container">
         <section className="home-hero">
-          <div className="hero-eyebrow">CAMPUS SERVICE DISPATCH</div>
+          <div className="hero-eyebrow">Campus service dispatch</div>
 
           <h1>Service, simplified.</h1>
 
@@ -100,7 +100,7 @@ export default function Home() {
             <div>
               <span className="session-label">Currently signed in</span>
               <strong>{current.name}</strong>
-              <span className="session-role"> · {current.role}</span>
+              <span className="session-role">{current.role}</span>
             </div>
           </div>
         )}
@@ -108,7 +108,7 @@ export default function Home() {
         <section className="role-section">
           <div className="section-heading">
             <div>
-              <span className="section-eyebrow">DEMO ACCESS</span>
+              <span className="section-eyebrow">Demo access</span>
               <h2>Choose an account</h2>
             </div>
 
@@ -147,7 +147,6 @@ export default function Home() {
                       onClick={() => login(user)}
                     >
                       <span>{user.name}</span>
-                      <span className="account-arrow">→</span>
                     </button>
                   ))}
                 </div>

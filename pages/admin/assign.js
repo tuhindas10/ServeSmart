@@ -35,19 +35,24 @@ export default function AdminAssign() {
 
   useEffect(() => {
     const u = getCurrentUser()
-    if (!u) {
+    if (!u || u.role !== 'admin') {
       router.push('/')
       return
     }
     setUser(u)
-    load()
+    load(u)
   }, [])
 
-  async function load() {
+  async function load(u) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/tickets')
+      const res = await fetch('/api/tickets', {
+        headers: {
+          'x-user-id': u.id,
+          'x-user-role': u.role,
+        },
+      })
       if (!res.ok) throw new Error()
       const data = await res.json()
       setAllTickets(data.tickets)
@@ -66,7 +71,11 @@ export default function AdminAssign() {
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
         body: JSON.stringify({ technicianId }),
       })
       if (!res.ok) throw new Error()
@@ -117,7 +126,7 @@ export default function AdminAssign() {
     { label: 'Technicians', value: technicians.length },
   ]
 
-  if (!user) return null
+  if (!user) return <div className="container">Loadingâ€¦</div>
 
   return (
     <div className="admin-assignment-page">
@@ -167,7 +176,7 @@ export default function AdminAssign() {
 
           {!loading &&
             unassignedSorted.map((t) => (
-              <div className="ticket-row" key={t.id}>
+              <div className={`ticket-row priority-${t.priority.toLowerCase()}`} key={t.id}>
                 <div>
                   <span className="code">{ticketCode(t.id)}</span>
                 </div>
@@ -236,7 +245,7 @@ export default function AdminAssign() {
               <div>Action</div>
             </div>
             {assignedTickets.map((t) => (
-              <div className="ticket-row" key={t.id}>
+              <div className={`ticket-row priority-${t.priority.toLowerCase()}`} key={t.id}>
                 <div>
                   <span className="code">{ticketCode(t.id)}</span>
                 </div>

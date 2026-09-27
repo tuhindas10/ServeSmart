@@ -5,6 +5,7 @@ import Navbar from '../../components/Navbar'
 import Tag from '../../components/Tag'
 import StatStrip from '../../components/StatStrip'
 import { getCurrentUser } from '../../lib/auth'
+import { STATUSES } from '../../lib/store'
 import {
   STATUS_META,
   PRIORITY_META,
@@ -29,6 +30,7 @@ export default function TechnicianDashboard() {
 
   const [search, setSearch] = useState('')
   const [priority, setPriority] = useState('all')
+  const [status, setStatus] = useState('all')
 
   useEffect(() => {
     const u = getCurrentUser()
@@ -44,7 +46,12 @@ export default function TechnicianDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/tickets?technicianId=${u.id}`)
+      const res = await fetch(`/api/tickets?technicianId=${u.id}`, {
+        headers: {
+          'x-user-id': u.id,
+          'x-user-role': u.role,
+        },
+      })
       if (!res.ok) throw new Error('Request failed')
       const data = await res.json()
       setTickets(data.tickets)
@@ -60,7 +67,11 @@ export default function TechnicianDashboard() {
     try {
       const res = await fetch(`/api/tickets/${ticketId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+          'x-user-role': user.role,
+        },
         body: JSON.stringify({ status: nextStatus }),
       })
       if (!res.ok) throw new Error()
@@ -93,7 +104,8 @@ export default function TechnicianDashboard() {
   }, [tickets])
 
   const visible = useMemo(() => {
-    let list = tickets.filter((t) => !['Resolved', 'Closed'].includes(t.status))
+    let list = tickets
+    if (status !== 'all') list = list.filter((t) => t.status === status)
     if (priority !== 'all') list = list.filter((t) => t.priority === priority)
     const q = search.trim().toLowerCase()
     if (q) {
@@ -106,7 +118,7 @@ export default function TechnicianDashboard() {
     return [...list].sort(
       (a, b) => priorityOrder(a.priority) - priorityOrder(b.priority),
     )
-  }, [tickets, priority, search])
+  }, [tickets, status, priority, search])
 
   if (!user) return null
 
@@ -138,6 +150,14 @@ export default function TechnicianDashboard() {
             <option value="P3">P3</option>
             <option value="P4">P4</option>
           </select>
+          <select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <option value="all">All statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="panel ticket-table cols-queue">
@@ -165,7 +185,7 @@ export default function TechnicianDashboard() {
               const next = NEXT_STATUS[t.status]
               return (
                 <div
-                  className="ticket-row"
+                  className={`ticket-row priority-${t.priority.toLowerCase()}`}
                   key={t.id}
                   style={{
                     gridTemplateColumns: '84px 1.6fr 1fr 70px 110px 1fr 130px',
